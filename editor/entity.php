@@ -69,7 +69,7 @@ abstract class Brizy_Editor_Entity extends Brizy_Admin_Serializable {
 	/**
 	 * @return mixed
 	 */
-	abstract public function createResponse();
+	abstract public function createResponse($fields = array());
 
 	/**
 	 * Save post data and and trigger post update
@@ -216,7 +216,13 @@ abstract class Brizy_Editor_Entity extends Brizy_Admin_Serializable {
 	 * @return mixed|string
 	 */
 	protected function createUid() {
+		$post_parent_id = $this->getWpPostParentId();
+
 		if ( $uid = $this->getUid() ) {
+			$uid            = get_post_meta( $post_parent_id, 'brizy_post_uid', true );
+			if ( ! $uid ) {
+				update_post_meta( $post_parent_id, 'brizy_post_uid', $this->getUid() );
+			}
 			return $uid;
 		}
 
