@@ -276,6 +276,7 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 
 		$ruleManager = new Brizy_Admin_Rules_Manager();
 
+
 		$data['rules']    = $ruleManager->getRules( $this->getWpPostId() );
 		$data['position'] = $this->getPosition();
 		$data['meta']     = $this->getMeta();
@@ -315,6 +316,9 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 	}
 
 	public function convertToOptionValue() {
+
+		$ruleManager   = new Brizy_Admin_Rules_Manager();
+
 		$data = parent::convertToOptionValue();
 
 		$ruleManager = new Brizy_Admin_Rules_Manager();
