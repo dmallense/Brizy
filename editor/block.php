@@ -14,6 +14,7 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 
 	const BRIZY_META = 'brizy-meta';
 	const BRIZY_MEDIA = 'brizy-media';
+	const BRIZY_POSITION = 'brizy-position';
 
 	/**
 	 * @var Brizy_Editor_BlockPosition
@@ -173,7 +174,7 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 	}
 
 	/**
-	 * @param $position
+	 * @param Brizy_Editor_BlockPosition $position
 	 *
 	 * @return $this
 	 */
@@ -193,7 +194,7 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 		return $this->uid;
 	}
 
-	public function setPosition( $position ) {
+	public function setPosition( Brizy_Editor_BlockPosition $position ) {
 		$this->position = $position;
 
 		return $this;
@@ -238,7 +239,7 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 	 * @return array
 	 */
 	public function getMeta() {
-		return get_metadata( 'post', $this->getWpPostId(), self::BRIZY_META, true );
+		return $this->meta;
 	}
 
 	/**
@@ -248,13 +249,13 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 	 */
 	public function setMeta( $meta ) {
 		$this->meta = $meta;
-		update_metadata( 'post', $this->getWpPostId(), self::BRIZY_META, $meta );
+
+		return $this;
 	}
 
 	public function getMedia() {
-		return get_metadata( 'post', $this->getWpPostId(), self::BRIZY_MEDIA, true );
+		return $this->media;
 	}
-
 
 	/**
 	 * @param string $media
@@ -263,7 +264,8 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 	 */
 	public function setMedia( $media ) {
 		$this->media = $media;
-		update_metadata( 'post', $this->getWpPostId(), self::BRIZY_MEDIA, $media );
+
+		return $this;
 	}
 
 	public function jsonSerialize() {
@@ -280,6 +282,7 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 
 
 		$data['position'] = null;
+
 		if ( $this->getPosition() ) {
 			$data['position'] = $this->getPosition()->jsonSerialize();
 		}
@@ -299,9 +302,6 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 		$storage_post = $storage->get( self::BRIZY_POST, false );
 
 		$this->position = null;
-		if ( isset( $storage_post['position'] ) ) {
-			$this->position = Brizy_Editor_BlockPosition::createFromSerializedData( $storage_post['position'] );
-		}
 
 		$ruleManager = new Brizy_Admin_Rules_Manager();
 		$this->setRules( $ruleManager->getRules( $this->getWpPostId() ) );
@@ -309,9 +309,15 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 		if ( isset( $storage_post['cloudId'] ) ) {
 			$this->setCloudId( $storage_post['cloudId'] );
 		}
+
 		if ( isset( $storage_post['cloudAccountId'] ) ) {
 			$this->setCloudAccountId( $storage_post['cloudAccountId'] );
 		}
+
+		$this->setPosition( Brizy_Editor_BlockPosition::createFromSerializedData( get_metadata( 'post', $this->getWpPostId(), self::BRIZY_POSITION, true ) ) );
+
+		$this->meta  = get_metadata( 'post', $this->getWpPostId(), self::BRIZY_META, true );
+		$this->media = get_metadata( 'post', $this->getWpPostId(), self::BRIZY_MEDIA, true );
 	}
 
 	public function convertToOptionValue() {
@@ -355,8 +361,8 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 		 */
 		$autosave = parent::populateAutoSavedData( $autosave );
 
-		$autosave->setPosition( $this->getPosition() );
-		$autosave->setRules( $this->getRules() );
+		//$autosave->setPosition( $this->getPosition() );
+		//$autosave->setRules( $this->getRules() );
 
 		return $autosave;
 	}
@@ -395,8 +401,23 @@ class Brizy_Editor_Block extends Brizy_Editor_Post {
 
 		if ( $autosave !== 1 ) {
 			$this->savePost();
+
 			do_action( 'brizy_global_data_updated' );
 		}
+	}
+
+	/**
+	 * This will take all values from entity and save them to database
+	 */
+	public function saveStorage() {
+		parent::saveStorage();
+		// save position
+		if ( $this->position instanceof Brizy_Editor_BlockPosition ) {
+			update_metadata( 'post', $this->getWpPostId(), self::BRIZY_POSITION, $this->position->convertToOptionValue() );
+		}
+
+		update_metadata( 'post', $this->getWpPostId(), self::BRIZY_META, $this->meta );
+		update_metadata( 'post', $this->getWpPostId(), self::BRIZY_MEDIA, $this->media );
 	}
 
 }
